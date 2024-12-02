@@ -217,7 +217,7 @@ function MainApp() {
               articles={isEditMode ? editableArticles : initialArticles}
               onReorder={!isEditMode ? moveArticle : undefined}
               showSelect={!isEditMode}
-              isSelected={isArticleSelected}
+              isSelected={(article) => isArticleSelected(article.id)}
               onSelect={toggleArticleSelection}
               isEditMode={isEditMode}
               onEdit={handleEdit}
