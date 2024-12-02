@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { X, Tag, Calendar } from 'lucide-react';
+import { X, Tag, Calendar, Trash2 } from 'lucide-react';
 import { Article } from '../types';
 import { sanitizeHTML } from '../utils/sanitize';
 
 interface ArticleModalProps {
   article: Article;
   onClose: () => void;
+  onDelete: (id: string) => void;
   triggerRect: DOMRect;
 }
 
-export const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, triggerRect }) => {
+export const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, onDelete, triggerRect }) => {
   const [isClosing, setIsClosing] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -73,12 +74,26 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, tr
             <h2 className="text-2xl font-semibold text-zenon-light-text dark:text-zenon-dark-text pr-8">
               {article.title}
             </h2>
-            <button
-              onClick={handleClose}
-              className="text-zenon-light-text/60 dark:text-zenon-dark-text/60 hover:text-zenon-primary transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this article?')) {
+                    onDelete(article.id);
+                    handleClose();
+                  }
+                }}
+                className="text-zenon-light-text/60 dark:text-zenon-dark-text/60 hover:text-red-500 transition-colors"
+                title="Delete article"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleClose}
+                className="text-zenon-light-text/60 dark:text-zenon-dark-text/60 hover:text-zenon-primary transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between text-sm text-zenon-light-text/60 dark:text-zenon-dark-text/60">

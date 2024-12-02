@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { ArticleCard } from './ArticleCard';
+import { ArticleFilters } from './ArticleFilters';
 import { Article } from '../types';
 import { ArrowUpDown } from 'lucide-react';
+
+type SortOption = 'priority' | 'date' | 'upvotes';
 
 interface ArticleListProps {
   articles: Article[];
@@ -12,7 +15,11 @@ interface ArticleListProps {
   onSelect?: (article: Article) => void;
   isEditMode?: boolean;
   onEdit?: (id: string, field: keyof Article, value: string) => void;
-  onSortByPriority?: () => void;
+  onDelete?: (id: string) => void;
+  onUpvote?: (id: string) => void;
+  hasUserUpvoted?: (id: string) => boolean;
+  currentSort: SortOption;
+  onSortChange: (option: SortOption) => void;
 }
 
 export const ArticleList: React.FC<ArticleListProps> = ({
@@ -23,50 +30,79 @@ export const ArticleList: React.FC<ArticleListProps> = ({
   onSelect,
   isEditMode,
   onEdit,
-  onSortByPriority,
+  onDelete,
+  onUpvote,
+  hasUserUpvoted,
+  currentSort,
+  onSortChange,
 }) => {
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-
     onReorder?.(result.source.index, result.destination.index);
   };
 
+  // Filter articles
+  let filteredArticles = articles;
+  if (selectedTags.length > 0) {
+    filteredArticles = articles.filter(article => 
+      article.tags && 
+      Array.isArray(article.tags) && 
+      selectedTags.every(tag => article.tags.includes(tag))
+    );
+  }
+
+  // Apply sorting
+  filteredArticles = [...filteredArticles].sort((a, b) => {
+    switch (currentSort) {
+      case 'date':
+        return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+      case 'upvotes':
+        return (b.upvotes || 0) - (a.upvotes || 0);
+      case 'priority':
+      default:
+        return a.position - b.position;
+    }
+  });
+
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <Droppable droppableId="articles">
-        {(provided) => (
-          <div
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            className="space-y-4"
-          >
-            {onSortByPriority && articles.length > 0 && (
-              <div className="flex justify-end mb-4">
-                <button
-                  onClick={onSortByPriority}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zenon-light-text/70 dark:text-zenon-dark-text/70 hover:text-zenon-primary transition-colors bg-zenon-light-card/90 dark:bg-zenon-dark-card/95 rounded-zenon shadow-sm"
-                >
-                  <ArrowUpDown size={16} />
-                  <span>Sort by Priority</span>
-                </button>
-              </div>
-            )}
-            {articles.map((article, index) => (
-              <ArticleCard
-                key={article.id}
-                article={article}
-                index={index}
-                showSelect={showSelect}
-                isSelected={isSelected?.(article)}
-                onSelect={onSelect}
-                isEditMode={isEditMode}
-                onEdit={onEdit}
-              />
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </DragDropContext>
+    <div className="space-y-6">
+      <ArticleFilters
+        selectedTags={selectedTags}
+        currentSort={currentSort}
+        onTagSelect={setSelectedTags}
+        onSortChange={onSortChange}
+      />
+
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="articles">
+          {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="space-y-4"
+            >
+              {filteredArticles.map((article, index) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  index={index}
+                  showSelect={showSelect}
+                  isSelected={isSelected?.(article)}
+                  onSelect={() => onSelect?.(article)}
+                  isEditMode={isEditMode}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onUpvote={onUpvote}
+                  hasUserUpvoted={hasUserUpvoted?.(article.id)}
+                />
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </div>
   );
 };

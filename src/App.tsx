@@ -4,51 +4,43 @@ import { ArticleList } from './components/ArticleList';
 import { useArticles } from './hooks/useArticles';
 import { useMouseGradient } from './hooks/useMouseGradient';
 import { ChevronLeft } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './lib/supabase';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { AuthProvider } from './components/AuthProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-console.log('Supabase URL:', supabaseUrl);
-console.log('Environment variables loaded:', {
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseAnonKey
-});
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { Trash2 } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import TrashPage from './components/TrashPage';
 
 function MainApp() {
+  const [sortOption, setSortOption] = useState<'priority' | 'date' | 'upvotes'>('priority');
   const {
     articles: initialArticles,
-    selectedArticles,
+    selectedArticleIds,
     toggleArticleSelection,
+    selectFirstN,
+    isArticleSelected,
     moveArticle,
-    handleBulkSelect,
     updateArticle,
+    deleteArticle,
+    createArticle,
+    handleUpvote,
+    hasUserUpvoted,
+    cleanBackslashesInDatabase,
     loading,
     error
-  } = useArticles();
+  } = useArticles(null, sortOption);
 
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [editableArticles, setEditableArticles] = useState(initialArticles);
-  const [selectedCount, setSelectedCount] = useState(selectedArticles.size);
+  const [inputValue, setInputValue] = useState(0);
 
   useMouseGradient();
 
   useEffect(() => {
     setEditableArticles(initialArticles);
   }, [initialArticles]);
-
-  useEffect(() => {
-    setSelectedCount(selectedArticles.size);
-  }, [selectedArticles]);
 
   useEffect(() => {
     console.log('Articles loaded:', initialArticles.length);
@@ -59,10 +51,10 @@ function MainApp() {
 
   const handlePublish = () => {
     const selectedArticlesList = editableArticles.filter(article => 
-      selectedArticles.has(article.id)
+      selectedArticleIds.includes(article.id)
     );
     setEditableArticles(initialArticles.map(article => 
-      selectedArticles.has(article.id) ? selectedArticlesList.find(a => a.id === article.id)! : article
+      selectedArticleIds.includes(article.id) ? selectedArticlesList.find(a => a.id === article.id)! : article
     ));
     console.log('Publishing articles:', selectedArticlesList);
     setIsEditMode(true);
@@ -89,6 +81,15 @@ function MainApp() {
     }
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedArticleIds.length === 0) return;
+    
+    if (window.confirm(`Are you sure you want to delete ${selectedArticleIds.length} selected article(s)?`)) {
+      const promises = selectedArticleIds.map(id => deleteArticle(id));
+      await Promise.all(promises);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-zenon-light-bg dark:bg-zenon-dark-bg flex items-center justify-center">
@@ -110,13 +111,14 @@ function MainApp() {
   }
 
   if (isEditMode) {
-    const selectedArticlesList = editableArticles.filter(article => selectedArticles.has(article.id));
+    const selectedArticlesList = editableArticles.filter(article => selectedArticleIds.includes(article.id));
     
     return (
       <div className="min-h-screen bg-zenon-light-bg dark:bg-zenon-dark-bg">
         <div className="max-w-4xl mx-auto py-8 px-4">
           <Header 
             isEditMode={true}
+            onAddArticle={createArticle}
           />
           <div className="mt-8 mb-6">
             <button
@@ -133,6 +135,9 @@ function MainApp() {
             isEditMode
             onEdit={handleEdit}
             onSortByPriority={handleSortByPriority}
+            onDelete={deleteArticle}
+            onUpvote={handleUpvote}
+            hasUserUpvoted={hasUserUpvoted}
           />
           <div className="mt-6 flex justify-end">
             <button
@@ -151,19 +156,80 @@ function MainApp() {
       <div className="max-w-4xl mx-auto py-8 px-4">
         <Header
           showBulkSelect={!isEditMode}
-          onBulkSelect={handleBulkSelect}
+          onBulkSelect={selectFirstN}
           onPublish={handlePublish}
-          selectedCount={selectedCount}
+          selectedCount={selectedArticleIds.length}
           isEditMode={isEditMode}
+          onAddArticle={createArticle}
         />
-        <ArticleList
-          articles={editableArticles}
-          onReorder={moveArticle}
-          showSelect
-          isSelected={(article) => selectedArticles.has(article.id)}
-          onSelect={toggleArticleSelection}
-          onSortByPriority={handleSortByPriority}
-        />
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm">Select first</span>
+              <input
+                type="number"
+                min="0"
+                value={inputValue}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0;
+                  setInputValue(value);
+                  selectFirstN(value);
+                }}
+                className="w-20 px-3 py-2 text-sm bg-zenon-light-bg dark:bg-zenon-dark-bg border border-zenon-light-border dark:border-zenon-dark-border rounded-zenon focus:outline-none focus:border-zenon-primary"
+              />
+              <span className="text-sm">articles</span>
+            </div>
+            <button
+              onClick={handlePublish}
+              disabled={selectedArticleIds.length === 0}
+              className={`px-6 py-2.5 rounded-zenon transition-colors flex items-center gap-2 ${
+                selectedArticleIds.length > 0
+                  ? 'bg-zenon-primary text-white hover:bg-zenon-primary-dark'
+                  : 'bg-zenon-light-border/50 dark:bg-zenon-dark-border/50 text-zenon-light-text/50 dark:text-zenon-dark-text/50 cursor-not-allowed'
+              }`}
+            >
+              Publish {selectedArticleIds.length > 1 && `(${selectedArticleIds.length})`}
+              <ChevronDown size={16} />
+            </button>
+            <button
+              onClick={handleDeleteSelected}
+              disabled={selectedArticleIds.length === 0}
+              className="px-4 py-2 bg-zenon-light-card dark:bg-zenon-dark-card rounded-zenon hover:bg-zenon-primary/10 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 size={16} />
+              Delete Selected ({selectedArticleIds.length})
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to clean all backslashes from the database? This action cannot be undone.')) {
+                  cleanBackslashesInDatabase();
+                }
+              }}
+              className="px-4 py-2 bg-zenon-light-card dark:bg-zenon-dark-card rounded-zenon hover:bg-zenon-primary/10 transition-colors"
+            >
+              Clean Backslashes
+            </button>
+          </div>
+        </div>
+        <Routes>
+          <Route path="/" element={
+            <ArticleList
+              articles={isEditMode ? editableArticles : initialArticles}
+              onReorder={!isEditMode ? moveArticle : undefined}
+              showSelect={!isEditMode}
+              isSelected={isArticleSelected}
+              onSelect={toggleArticleSelection}
+              isEditMode={isEditMode}
+              onEdit={handleEdit}
+              onDelete={deleteArticle}
+              onUpvote={handleUpvote}
+              hasUserUpvoted={hasUserUpvoted}
+              currentSort={sortOption}
+              onSortChange={setSortOption}
+            />
+          } />
+          <Route path="/trash" element={<TrashPage />} />
+        </Routes>
       </div>
     </div>
   );
@@ -171,13 +237,15 @@ function MainApp() {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <SessionContextProvider supabaseClient={supabase}>
-        <AuthProvider>
-          <MainApp />
-        </AuthProvider>
-      </SessionContextProvider>
-    </ErrorBoundary>
+    <Router>
+      <ErrorBoundary>
+        <SessionContextProvider supabaseClient={supabase}>
+          <AuthProvider>
+            <MainApp />
+          </AuthProvider>
+        </SessionContextProvider>
+      </ErrorBoundary>
+    </Router>
   );
 }
 

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { GripVertical, Tag, Calendar, FileText, Minimize2, ArrowUpDown } from 'lucide-react';
+import { GripVertical, Tag, Calendar, FileText, Minimize2, ArrowUpDown, ThumbsUp } from 'lucide-react';
 import { Article } from '../types';
 import { ArticleModal } from './ArticleModal';
 import { sanitizeHTML } from '../utils/sanitize';
@@ -13,6 +13,9 @@ interface ArticleCardProps {
   onSelect?: (article: Article) => void;
   isEditMode?: boolean;
   onEdit?: (id: string, field: keyof Article, value: string) => void;
+  onDelete?: (id: string) => void;
+  onUpvote?: (id: string) => void;
+  hasUserUpvoted?: boolean;
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
@@ -23,9 +26,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   onSelect,
   isEditMode,
   onEdit,
+  onDelete,
+  onUpvote,
+  hasUserUpvoted,
 }) => {
   const [showModal, setShowModal] = useState(false);
-  const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
+  const [modalTriggerRect, setModalTriggerRect] = useState<DOMRect | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -39,21 +45,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     console.log('Reducing text for article:', article.id);
   };
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (
-      isEditMode ||
-      e.target instanceof Element &&
-      (e.target.closest('input[type="checkbox"]') ||
-        e.target.closest('label') ||
-        e.target.closest('[data-drag-handle]') ||
-        e.target.closest('textarea') ||
-        e.target.closest('a'))
-    ) {
+  const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // Ne pas ouvrir la carte si on clique sur certains éléments
+    const target = event.target as Element;
+    const clickedElement = target.closest('button, input[type="checkbox"], .select-area, label, [data-drag-handle], textarea, a, [data-no-expand]');
+    
+    if (isEditMode || clickedElement) {
       return;
     }
 
     if (cardRef.current) {
-      setTriggerRect(cardRef.current.getBoundingClientRect());
+      const rect = cardRef.current.getBoundingClientRect();
+      setModalTriggerRect(rect);
       setShowModal(true);
     }
   };
@@ -70,7 +73,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   return (
     <>
       <Draggable draggableId={article.id} index={index}>
-        {(provided) => (
+        {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.draggableProps}
@@ -78,22 +81,25 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           >
             <div
               ref={cardRef}
-              onClick={handleClick}
-              className="relative bg-zenon-light-card/90 dark:bg-zenon-dark-card/95 p-6 rounded-zenon transition-all shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_4px_6px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_-3px_rgba(0,0,0,0.2),0_4px_6px_-2px_rgba(0,0,0,0.15)]"
+              onClick={!snapshot.isDragging ? handleCardClick : undefined}
+              className={`relative bg-zenon-light-card/90 dark:bg-zenon-dark-card/95 p-6 rounded-zenon transition-all shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_4px_6px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_-3px_rgba(0,0,0,0.2),0_4px_6px_-2px_rgba(0,0,0,0.15)] cursor-pointer hover:shadow-lg ${
+                snapshot.isDragging ? 'shadow-lg' : ''
+              }`}
+              style={{ pointerEvents: 'auto' }}
             >
               <div className="flex items-start justify-between gap-4 w-full relative">
                 <div className="flex-grow">
-                  <div className="flex flex-wrap gap-1.5 mb-3">
+                  <div className="flex flex-wrap gap-1.5 mb-3 pointer-events-auto">
                     <div className="flex items-center gap-2 text-zenon-light-text/60 dark:text-zenon-dark-text/60 mr-1">
                       <Tag size={14} className="flex-shrink-0" />
                     </div>
-                    {article.tags?.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center gap-1 bg-zenon-primary/10 text-zenon-primary text-xs px-3 py-1 rounded-full"
+                    {article.tags?.map((tag, index) => (
+                      <div
+                        key={index}
+                        className="px-2 py-0.5 text-xs rounded-full bg-red-500/10 text-red-600 dark:text-red-400"
                       >
                         {tag}
-                      </span>
+                      </div>
                     ))}
                   </div>
 
@@ -161,16 +167,37 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   )}
 
                   <div className="text-sm text-zenon-light-text/60 dark:text-zenon-dark-text/60 mt-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar size={14} className="flex-shrink-0" />
-                      <span>Published: {article.publishedAt}</span>
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                      <a
+                        href={article.source}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={handleLinkClick}
+                        className="text-sm text-zenon-light-text/60 dark:text-zenon-dark-text/60 hover:text-zenon-primary transition-colors"
+                      >
+                        Source
+                      </a>
+                      {article.additionalSources?.map((source, index) => (
+                        <React.Fragment key={source}>
+                          <span className="text-zenon-light-text/30 dark:text-zenon-dark-text/30">•</span>
+                          <a
+                            href={source}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={handleLinkClick}
+                            className="text-sm text-zenon-light-text/60 dark:text-zenon-dark-text/60 hover:text-zenon-primary transition-colors"
+                          >
+                            Source {index + 2}
+                          </a>
+                        </React.Fragment>
+                      ))}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end">
+                <div className="flex items-center gap-4">
                   {showSelect && (
-                    <div className="relative">
+                    <div className="select-area" data-no-expand>
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -183,8 +210,29 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       />
                     </div>
                   )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUpvote?.(article.id);
+                    }}
+                    data-no-expand
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-zenon transition-colors ${
+                      hasUserUpvoted
+                        ? 'bg-zenon-primary text-white'
+                        : 'bg-zenon-light-bg/50 dark:bg-zenon-dark-bg/50 text-zenon-light-text/70 dark:text-zenon-dark-text/70 hover:bg-zenon-primary/10'
+                    }`}
+                  >
+                    <ThumbsUp size={14} />
+                    <span>{article.upvotes || 0}</span>
+                  </button>
                 </div>
-                <div {...provided.dragHandleProps} data-drag-handle className="absolute right-0 top-1/2 -translate-y-1/2 ml-4">
+                <div 
+                  {...provided.dragHandleProps} 
+                  data-drag-handle
+                  data-no-expand
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 ml-4 cursor-grab active:cursor-grabbing"
+                >
                   <GripVertical className="w-6 h-6 text-zenon-light-text/50 dark:text-zenon-dark-text/50" />
                 </div>
               </div>
@@ -193,11 +241,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         )}
       </Draggable>
 
-      {showModal && triggerRect && (
+      {showModal && modalTriggerRect && (
         <ArticleModal
           article={article}
-          triggerRect={triggerRect}
-          onClose={() => setShowModal(false)}
+          onClose={() => {
+            setShowModal(false);
+            setModalTriggerRect(null);
+          }}
+          onDelete={onDelete!}
+          triggerRect={modalTriggerRect}
         />
       )}
     </>

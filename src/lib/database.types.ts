@@ -20,6 +20,11 @@ export interface Database {
           source: string
           additional_sources?: string[] | null
           tags: string[]
+          is_deleted: boolean
+          deleted_at?: string | null
+          position: number
+          is_selected: boolean
+          upvotes: number
         }
         Insert: {
           id?: string
@@ -31,6 +36,11 @@ export interface Database {
           source: string
           additional_sources?: string[] | null
           tags: string[]
+          is_deleted?: boolean
+          deleted_at?: string | null
+          position?: number
+          is_selected?: boolean
+          upvotes?: number
         }
         Update: {
           id?: string
@@ -42,6 +52,31 @@ export interface Database {
           source?: string
           additional_sources?: string[] | null
           tags?: string[]
+          is_deleted?: boolean
+          deleted_at?: string | null
+          position?: number
+          is_selected?: boolean
+          upvotes?: number
+        }
+      }
+      article_votes: {
+        Row: {
+          id: string
+          article_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          article_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          article_id?: string
+          user_id?: string
+          created_at?: string
         }
       }
     }
