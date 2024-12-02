@@ -22,23 +22,99 @@ export const useArticles = (selectedTag: string | null = null, sortOption: SortO
       .on(
         'postgres_changes',
         {
-          event: '*', // Écoute tous les événements (INSERT, UPDATE, DELETE)
+          event: 'INSERT',
           schema: 'public',
           table: 'articles'
         },
-        async (payload) => {
-          console.log('Realtime change received:', payload);
+        (payload) => {
+          console.log('Article inserted:', payload);
+          const newArticle = payload.new as Article;
+          if (!newArticle.is_deleted) {
+            setArticles(prev => {
+              const updated = [...prev, newArticle];
+              return sortArticles(updated, sortOption);
+            });
+          } else {
+            setDeletedArticles(prev => [...prev, newArticle]);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'articles'
+        },
+        (payload) => {
+          console.log('Article updated:', payload);
+          const updatedArticle = payload.new as Article;
           
-          // Rafraîchir les listes d'articles
-          await Promise.all([
-            fetchArticles(),
-            fetchDeletedArticles()
-          ]);
+          if (!updatedArticle.is_deleted) {
+            setArticles(prev => {
+              const updated = prev.map(article =>
+                article.id === updatedArticle.id ? updatedArticle : article
+              );
+              return sortArticles(updated, sortOption);
+            });
+          } else {
+            // L'article a été supprimé
+            setArticles(prev => prev.filter(article => article.id !== updatedArticle.id));
+            setDeletedArticles(prev => [...prev, updatedArticle]);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'articles'
+        },
+        (payload) => {
+          console.log('Article deleted:', payload);
+          const deletedArticle = payload.old as Article;
+          setArticles(prev => prev.filter(article => article.id !== deletedArticle.id));
+          setDeletedArticles(prev => prev.filter(article => article.id !== deletedArticle.id));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'article_votes'
+        },
+        async (payload) => {
+          console.log('Vote change:', payload);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: votes } = await supabase
+              .from('article_votes')
+              .select('article_id')
+              .eq('user_id', user.id);
+            setUserUpvotes(votes?.map(v => v.article_id) || []);
+          }
         }
       )
       .subscribe();
 
     return channel;
+  };
+
+  // Fonction utilitaire pour trier les articles
+  const sortArticles = (articles: Article[], option: SortOption): Article[] => {
+    return [...articles].sort((a, b) => {
+      switch (option) {
+        case 'date':
+          return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+        case 'upvotes':
+          return (b.upvotes || 0) - (a.upvotes || 0);
+        case 'priority':
+        default:
+          return a.position - b.position;
+      }
+    });
   };
 
   const fetchArticles = useCallback(async () => {
@@ -71,24 +147,7 @@ export const useArticles = (selectedTag: string | null = null, sortOption: SortO
       if (fetchError) throw fetchError;
 
       let sortedArticles = data || [];
-
-      // Appliquer le tri
-      switch (sortOption) {
-        case 'date':
-          sortedArticles.sort((a, b) => 
-            new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
-          );
-          break;
-        case 'upvotes':
-          sortedArticles.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
-          break;
-        case 'priority':
-        default:
-          sortedArticles.sort((a, b) => a.position - b.position);
-          break;
-      }
-
-      setArticles(sortedArticles);
+      setArticles(sortArticles(sortedArticles, sortOption));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
