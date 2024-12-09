@@ -1,11 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
-import { User2, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { User2, LogOut, Settings, ChevronDown, Users } from 'lucide-react';
+
+interface OnlineUser {
+  id: string;
+  email: string;
+  last_seen: string;
+}
 
 export const ProfileMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const supabase = useSupabaseClient();
   const user = useUser();
+
+  useEffect(() => {
+    const updatePresence = async () => {
+      if (user) {
+        // Update user's presence
+        await supabase
+          .from('user_presence')
+          .upsert({
+            id: user.id,
+            email: user.email,
+            last_seen: new Date().toISOString(),
+          });
+      }
+    };
+
+    const fetchOnlineUsers = async () => {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('user_presence')
+        .select('*')
+        .gt('last_seen', fiveMinutesAgo)
+        .order('last_seen', { ascending: false });
+
+      if (!error && data) {
+        setOnlineUsers(data);
+      }
+    };
+
+    // Initial update and fetch
+    updatePresence();
+    fetchOnlineUsers();
+
+    // Set up interval to update presence and fetch online users
+    const interval = setInterval(() => {
+      updatePresence();
+      fetchOnlineUsers();
+    }, 30000); // Every 30 seconds
+
+    // Cleanup
+    return () => clearInterval(interval);
+  }, [supabase, user]);
 
   const handleSignOut = async () => {
     try {
@@ -67,6 +115,35 @@ export const ProfileMenu: React.FC = () => {
             </div>
             
             <div className="p-2">
+              <div className="mb-2 px-3 py-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4 text-zenon-light-text/70 dark:text-zenon-dark-text/70" />
+                  <span className="text-sm font-medium text-zenon-light-text dark:text-zenon-dark-text">
+                    Online Users ({onlineUsers.length})
+                  </span>
+                </div>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {onlineUsers.map((onlineUser) => (
+                    <div
+                      key={onlineUser.id}
+                      className="flex items-center gap-2 px-2 py-1 rounded-lg text-sm"
+                    >
+                      <div className="relative">
+                        <div className="w-6 h-6 rounded-full bg-zenon-primary/10 dark:bg-zenon-primary/20 flex items-center justify-center">
+                          <User2 className="w-3 h-3 text-zenon-primary" />
+                        </div>
+                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+                      </div>
+                      <span className="text-zenon-light-text/90 dark:text-zenon-dark-text/90 truncate">
+                        {onlineUser.email?.split('@')[0]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="h-px bg-zenon-light-border dark:bg-zenon-dark-border my-1" />
+
               <button
                 onClick={() => {
                   console.log('Settings clicked');
