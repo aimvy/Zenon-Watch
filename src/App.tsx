@@ -9,7 +9,7 @@ import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { AuthProvider } from './components/AuthProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Trash2 } from 'lucide-react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TrashPage from './components/TrashPage';
 
@@ -71,14 +71,8 @@ function MainApp() {
     }
   };
 
-  const handleSortByPriority = async () => {
-    try {
-      // TODO: Implement webhook call
-      console.log('Sorting articles by priority...');
-      // You can add your Make.com webhook URL here later
-    } catch (error) {
-      console.error('Error sorting articles:', error);
-    }
+  const handleSortChange = async (option: 'priority' | 'date' | 'upvotes') => {
+    setSortOption(option);
   };
 
   const handleDeleteSelected = async () => {
@@ -115,7 +109,7 @@ function MainApp() {
     
     return (
       <div className="min-h-screen bg-zenon-light-bg dark:bg-zenon-dark-bg">
-        <div className="max-w-4xl mx-auto py-8 px-4">
+        <div className="max-w-[80rem] mx-auto py-8 px-4 sm:px-8 md:px-16 lg:px-24">
           <Header 
             isEditMode={true}
             onAddArticle={createArticle}
@@ -134,7 +128,6 @@ function MainApp() {
             onReorder={moveArticle}
             isEditMode
             onEdit={handleEdit}
-            onSortByPriority={handleSortByPriority}
             onDelete={deleteArticle}
             onUpvote={handleUpvote}
             hasUserUpvoted={hasUserUpvoted}
@@ -153,7 +146,7 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-zenon-light-bg dark:bg-zenon-dark-bg">
-      <div className="max-w-4xl mx-auto py-8 px-4">
+      <div className="max-w-[80rem] mx-auto py-8 px-4 sm:px-8 md:px-16 lg:px-24">
         <Header
           showBulkSelect={!isEditMode}
           onBulkSelect={selectFirstN}
@@ -182,14 +175,16 @@ function MainApp() {
             <button
               onClick={handlePublish}
               disabled={selectedArticleIds.length === 0}
-              className={`px-6 py-2.5 rounded-zenon transition-colors flex items-center gap-2 ${
+              className={`w-44 px-6 py-2.5 rounded-zenon transition-colors flex items-center justify-between whitespace-nowrap ${
                 selectedArticleIds.length > 0
                   ? 'bg-zenon-primary text-white hover:bg-zenon-primary-dark'
                   : 'bg-zenon-light-border/50 dark:bg-zenon-dark-border/50 text-zenon-light-text/50 dark:text-zenon-dark-text/50 cursor-not-allowed'
               }`}
             >
-              Publish {selectedArticleIds.length > 1 && `(${selectedArticleIds.length})`}
-              <ChevronDown size={16} />
+              <span className="flex-1 text-center">
+                Publish{selectedArticleIds.length > 1 ? ` (${selectedArticleIds.length})` : ''}
+              </span>
+              <ChevronRight size={16} className="flex-shrink-0 ml-2" />
             </button>
             <button
               onClick={handleDeleteSelected}
@@ -225,7 +220,7 @@ function MainApp() {
               onUpvote={handleUpvote}
               hasUserUpvoted={hasUserUpvoted}
               currentSort={sortOption}
-              onSortChange={setSortOption}
+              onSortChange={handleSortChange}
             />
           } />
           <Route path="/trash" element={<TrashPage />} />

@@ -41,6 +41,29 @@ export const useArticles = (selectedTag: string | null = null, sortOption: SortO
     return channel;
   };
 
+  const sendToWebhook = async (articles: Article[]) => {
+    try {
+      const articlesData = articles.map(article => ({
+        title: article.title,
+        content: article.summary
+      }));
+
+      const response = await fetch('https://hook.eu2.make.com/2vqpjsbp8r4n15mdheai74gotyl9oxeg', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(articlesData)
+      });
+
+      if (!response.ok) {
+        console.error('Webhook error:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error sending to webhook:', error);
+    }
+  };
+
   const fetchArticles = useCallback(async () => {
     try {
       setLoading(true);
@@ -49,14 +72,14 @@ export const useArticles = (selectedTag: string | null = null, sortOption: SortO
       // Fetch user's upvotes
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: votes } = await supabase
+        const { data: upvotes } = await supabase
           .from('article_votes')
           .select('article_id')
           .eq('user_id', user.id);
-        setUserUpvotes(votes?.map(v => v.article_id) || []);
+        
+        setUserUpvotes(upvotes?.map(vote => vote.article_id) || []);
       }
 
-      // Fetch articles
       let query = supabase
         .from('articles')
         .select('*')
@@ -70,21 +93,19 @@ export const useArticles = (selectedTag: string | null = null, sortOption: SortO
 
       if (fetchError) throw fetchError;
 
-      let sortedArticles = data || [];
+      let sortedArticles = [...(data || [])];
 
-      // Appliquer le tri
+      // Tri des articles
       switch (sortOption) {
         case 'date':
-          sortedArticles.sort((a, b) => 
-            new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
-          );
+          sortedArticles.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
           break;
         case 'upvotes':
           sortedArticles.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
           break;
         case 'priority':
         default:
-          sortedArticles.sort((a, b) => a.position - b.position);
+          sortedArticles.sort((a, b) => (b.position || 0) - (a.position || 0));
           break;
       }
 
@@ -190,22 +211,15 @@ export const useArticles = (selectedTag: string | null = null, sortOption: SortO
   const moveArticle = async (fromIndex: number, toIndex: number) => {
     try {
       const articleToMove = articles[fromIndex];
-      const targetArticle = articles[toIndex];
       
-      // Mettre à jour la position dans la base de données
-      const { error } = await supabase
-        .from('articles')
-        .update({ position: toIndex })
-        .eq('id', articleToMove.id);
-
-      if (error) throw error;
-
+      // Mettre à jour uniquement l'état local
       setArticles(prev => {
-        const next = [...prev];
-        const [moved] = next.splice(fromIndex, 1);
-        next.splice(toIndex, 0, moved);
-        return next;
+        const newArticles = [...prev];
+        const [movedArticle] = newArticles.splice(fromIndex, 1);
+        newArticles.splice(toIndex, 0, movedArticle);
+        return newArticles;
       });
+
     } catch (err) {
       console.error('Error moving article:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while moving the article');
@@ -248,16 +262,41 @@ export const useArticles = (selectedTag: string | null = null, sortOption: SortO
         return;
       }
 
-      const articlesToSelect = articles.slice(0, n);
+      // Obtenir les articles filtrés et triés actuels
+      let filteredAndSortedArticles = [...articles];
+
+      // Appliquer le tri actuel
+      filteredAndSortedArticles.sort((a, b) => {
+        switch (sortOption) {
+          case 'date':
+            return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+          case 'upvotes':
+            return (b.upvotes || 0) - (a.upvotes || 0);
+          case 'priority':
+          default:
+            return a.position - b.position;
+        }
+      });
+
+      // Sélectionner les N premiers articles de la liste triée
+      const articlesToSelect = filteredAndSortedArticles.slice(0, n);
       const idsToSelect = articlesToSelect.map(article => article.id);
 
-      // Mettre à jour la sélection dans la base de données
-      const { error } = await supabase
+      // D'abord, désélectionner tous les articles
+      const { error: deselectAllError } = await supabase
+        .from('articles')
+        .update({ is_selected: false })
+        .eq('is_deleted', false);
+
+      if (deselectAllError) throw deselectAllError;
+
+      // Ensuite, sélectionner les articles choisis
+      const { error: selectError } = await supabase
         .from('articles')
         .update({ is_selected: true })
         .in('id', idsToSelect);
 
-      if (error) throw error;
+      if (selectError) throw selectError;
 
       setSelectedArticleIds(idsToSelect);
     } catch (err) {

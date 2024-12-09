@@ -48,6 +48,64 @@ export const ArticleFilters: React.FC<ArticleFiltersProps> = ({
     }
   };
 
+  const sendToWebhook = async () => {
+    console.log('Starting webhook send...');
+    try {
+      const { data: articles, error } = await supabase
+        .from('articles')
+        .select('title, summary')
+        .eq('is_deleted', false);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        return;
+      }
+
+      if (!articles || articles.length === 0) {
+        console.log('No articles found');
+        return;
+      }
+
+      console.log('Articles fetched:', articles.length);
+
+      // Envoyer les données dans un format différent
+      const webhookData = {
+        articles: articles.map(article => ({
+          title: article.title || '',
+          content: article.summary || ''
+        }))
+      };
+
+      console.log('Sending to webhook:', webhookData);
+
+      const response = await fetch('https://hook.eu2.make.com/2vqpjsbp8r4n15mdheai74gotyl9oxeg', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(webhookData)
+      });
+
+      const responseText = await response.text();
+      console.log('Webhook response:', response.status, responseText);
+
+      if (!response.ok) {
+        console.error('Webhook error:', response.status, responseText);
+      } else {
+        console.log('Articles sent to webhook successfully');
+      }
+    } catch (error) {
+      console.error('Error in sendToWebhook:', error);
+    }
+  };
+
+  const handlePriorityClick = async () => {
+    console.log('Priority button clicked');
+    await sendToWebhook();
+    onSortChange('priority');
+  };
+
   const handleTagClick = (tag: string) => {
     if (selectedTags.includes(tag)) {
       onTagSelect(selectedTags.filter(t => t !== tag));
@@ -65,7 +123,7 @@ export const ArticleFilters: React.FC<ArticleFiltersProps> = ({
       {/* Sort buttons */}
       <div className="flex flex-wrap items-center gap-2">
         <button
-          onClick={() => onSortChange('priority')}
+          onClick={handlePriorityClick}
           className={`flex items-center gap-2 px-4 py-2 rounded-zenon transition-colors ${
             currentSort === 'priority'
               ? 'bg-zenon-primary text-white'
@@ -101,14 +159,6 @@ export const ArticleFilters: React.FC<ArticleFiltersProps> = ({
 
       {/* Tag list */}
       <div className="flex flex-wrap gap-2 mt-2">
-        {selectedTags.length > 0 && (
-          <button
-            onClick={clearTags}
-            className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-red-500/10"
-          >
-            Clear All
-          </button>
-        )}
         {tags.map((tag) => (
           <button
             key={tag}

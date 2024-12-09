@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { ArticleCard } from './ArticleCard';
 import { ArticleFilters } from './ArticleFilters';
@@ -37,34 +37,45 @@ export const ArticleList: React.FC<ArticleListProps> = ({
   onSortChange,
 }) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [localArticles, setLocalArticles] = useState(articles);
+  const [sortCounter, setSortCounter] = useState(0);
+
+  // Mettre à jour localArticles quand les articles changent ou quand le tri change
+  useEffect(() => {
+    let filtered = articles;
+    if (selectedTags.length > 0) {
+      filtered = articles.filter(article => 
+        article.tags && 
+        Array.isArray(article.tags) && 
+        selectedTags.every(tag => article.tags.includes(tag))
+      );
+    }
+
+    // Appliquer le tri
+    const sorted = [...filtered].sort((a, b) => {
+      switch (currentSort) {
+        case 'date':
+          return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+        case 'upvotes':
+          return (b.upvotes || 0) - (a.upvotes || 0);
+        case 'priority':
+        default:
+          return a.position - b.position;
+      }
+    });
+
+    setLocalArticles(sorted);
+  }, [articles, currentSort, selectedTags, sortCounter]);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-    onReorder?.(result.source.index, result.destination.index);
+    
+    // Mettre à jour uniquement l'ordre local
+    const items = Array.from(localArticles);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setLocalArticles(items);
   };
-
-  // Filter articles
-  let filteredArticles = articles;
-  if (selectedTags.length > 0) {
-    filteredArticles = articles.filter(article => 
-      article.tags && 
-      Array.isArray(article.tags) && 
-      selectedTags.every(tag => article.tags.includes(tag))
-    );
-  }
-
-  // Apply sorting
-  filteredArticles = [...filteredArticles].sort((a, b) => {
-    switch (currentSort) {
-      case 'date':
-        return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
-      case 'upvotes':
-        return (b.upvotes || 0) - (a.upvotes || 0);
-      case 'priority':
-      default:
-        return a.position - b.position;
-    }
-  });
 
   return (
     <div className="space-y-6">
@@ -72,7 +83,11 @@ export const ArticleList: React.FC<ArticleListProps> = ({
         selectedTags={selectedTags}
         currentSort={currentSort}
         onTagSelect={setSelectedTags}
-        onSortChange={onSortChange}
+        onSortChange={(sort) => {
+          // Incrémenter le compteur même si le mode de tri ne change pas
+          setSortCounter(prev => prev + 1);
+          onSortChange(sort);
+        }}
       />
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -83,7 +98,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
               ref={provided.innerRef}
               className="space-y-4"
             >
-              {filteredArticles.map((article, index) => (
+              {localArticles.map((article, index) => (
                 <ArticleCard
                   key={article.id}
                   article={article}

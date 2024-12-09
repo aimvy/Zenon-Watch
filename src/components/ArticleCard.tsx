@@ -35,7 +35,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const MAX_CHARS = 300;
+  const MAX_CHARS = 1200/*  */;
 
   const wordCount = article.summary.trim().split(/\s+/).length;
 
@@ -83,9 +83,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               ref={cardRef}
               onClick={!snapshot.isDragging ? handleCardClick : undefined}
               className={`relative bg-zenon-light-card/90 dark:bg-zenon-dark-card/95 p-6 rounded-zenon transition-all shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_4px_6px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_-3px_rgba(0,0,0,0.2),0_4px_6px_-2px_rgba(0,0,0,0.15)] cursor-pointer hover:shadow-lg ${
-                snapshot.isDragging ? 'shadow-lg' : ''
+                snapshot.isDragging ? 'shadow-lg ring-2 ring-zenon-primary/50' : ''
               }`}
-              style={{ pointerEvents: 'auto' }}
             >
               <div className="flex items-start justify-between gap-4 w-full relative">
                 <div className="flex-grow">
@@ -194,7 +193,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     </div>
                   </div>
                 </div>
-
+                <div 
+                  {...provided.dragHandleProps}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 ml-4 cursor-grab active:cursor-grabbing p-2"
+                >
+                  <GripVertical className="w-8 h-8 text-zenon-light-text/50 dark:text-zenon-dark-text/50" />
+                </div>
                 <div className="flex items-center gap-4">
                   {showSelect && (
                     <div className="select-area" data-no-expand>
@@ -225,15 +229,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     <ThumbsUp size={14} />
                     <span>{article.upvotes || 0}</span>
                   </button>
-                </div>
-                <div 
-                  {...provided.dragHandleProps} 
-                  data-drag-handle
-                  data-no-expand
-                  onClick={(e) => e.stopPropagation()}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 ml-4 cursor-grab active:cursor-grabbing"
-                >
-                  <GripVertical className="w-6 h-6 text-zenon-light-text/50 dark:text-zenon-dark-text/50" />
                 </div>
               </div>
             </div>
