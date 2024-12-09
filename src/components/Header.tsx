@@ -21,7 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
 
   return (
-    <div className="relative -mx-4 sm:-mx-8 md:-mx-14 lg:-mx-20 mb-8 overflow-x-hidden">
+    <div className="sticky top-0 z-50 -mx-4 sm:-mx-8 md:-mx-14 lg:-mx-20 mb-8">
       <div className="bg-zenon-light-card dark:bg-zenon-dark-card shadow-sm rounded-zenon px-4 sm:px-8 md:px-12 lg:px-16 py-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
           <div className="flex items-center gap-4 sm:gap-6">
