@@ -12,6 +12,8 @@ import { Trash2 } from 'lucide-react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TrashPage from './components/TrashPage';
+import Background from './components/Background';
+import { BackgroundProvider } from './contexts/BackgroundContext';
 
 function MainApp() {
   const [sortOption, setSortOption] = useState<'priority' | 'date' | 'upvotes'>('priority');
@@ -108,7 +110,8 @@ function MainApp() {
     const selectedArticlesList = editableArticles.filter(article => selectedArticleIds.includes(article.id));
     
     return (
-      <div className="min-h-screen bg-zenon-light-bg dark:bg-zenon-dark-bg">
+      <div className="relative min-h-screen bg-zenon-light-bg/50 dark:bg-zenon-dark-bg/50">
+        <Background />
         <div className="max-w-[80rem] mx-auto py-8 px-4 sm:px-8 md:px-16 lg:px-24">
           <Header 
             isEditMode={true}
@@ -145,7 +148,8 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-zenon-light-bg dark:bg-zenon-dark-bg">
+    <div className="relative min-h-screen bg-zenon-light-bg/50 dark:bg-zenon-dark-bg/50">
+      <Background />
       <div className="max-w-[80rem] mx-auto py-8 px-4 sm:px-8 md:px-16 lg:px-24">
         <Header
           showBulkSelect={!isEditMode}
@@ -236,7 +240,9 @@ function App() {
       <ErrorBoundary>
         <SessionContextProvider supabaseClient={supabase}>
           <AuthProvider>
-            <MainApp />
+            <BackgroundProvider>
+              <MainApp />
+            </BackgroundProvider>
           </AuthProvider>
         </SessionContextProvider>
       </ErrorBoundary>

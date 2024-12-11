@@ -3,9 +3,10 @@ import { ThemeToggle } from './ThemeToggle';
 import { ProfileMenu } from './ProfileMenu';
 import { AddArticleModal } from './AddArticleModal';
 import { Link, useLocation } from 'react-router-dom';
-import { Trash2, ArrowLeft, Plus } from 'lucide-react';
+import { Trash2, ArrowLeft, Plus, Eye, EyeOff } from 'lucide-react';
 import { Article } from '../types';
 import ZENON from '../assets/ZENON.webp';
+import { useBackground } from '../contexts/BackgroundContext';
 
 interface HeaderProps {
   isEditMode?: boolean;
@@ -19,10 +20,11 @@ export const Header: React.FC<HeaderProps> = ({
   const location = useLocation();
   const isTrashPage = location.pathname === '/trash';
   const [showAddModal, setShowAddModal] = useState(false);
+  const { showHalos, toggleHalos } = useBackground();
 
   return (
     <div className="sticky top-0 z-50 -mx-4 sm:-mx-8 md:-mx-14 lg:-mx-20 mb-8">
-      <div className="bg-zenon-light-card dark:bg-zenon-dark-card shadow-sm rounded-zenon px-4 sm:px-8 md:px-12 lg:px-16 py-6">
+      <div className="header-bg zenon-shadow rounded-zenon px-4 sm:px-8 md:px-12 lg:px-16 py-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
           <div className="flex items-center gap-4 sm:gap-6">
             <img 
@@ -45,24 +47,35 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Add Article</span>
               </button>
             )}
-            {isTrashPage ? (
-              <Link
-                to="/"
-                className="px-3 sm:px-4 py-2 bg-zenon-light-card dark:bg-zenon-dark-card rounded-zenon hover:bg-zenon-primary/10 transition-colors flex items-center gap-2 whitespace-nowrap"
-              >
-                <ArrowLeft size={16} />
-                Back to Articles
-              </Link>
-            ) : (
+            {!isTrashPage ? (
               <Link
                 to="/trash"
-                className="px-3 sm:px-4 py-2 bg-zenon-light-card dark:bg-zenon-dark-card rounded-zenon hover:bg-zenon-primary/10 transition-colors flex items-center gap-2 whitespace-nowrap"
+                className="px-3 sm:px-4 py-2 bg-zenon-light-card dark:bg-zenon-dark-card rounded-zenon hover:bg-gray-100 dark:hover:bg-zenon-light-bg/10 transition-colors flex items-center gap-2 whitespace-nowrap"
               >
                 <Trash2 size={16} />
                 Trash
               </Link>
+            ) : (
+              <Link
+                to="/"
+                className="px-3 sm:px-4 py-2 bg-zenon-light-card dark:bg-zenon-dark-card rounded-zenon hover:bg-gray-100 dark:hover:bg-zenon-light-bg/10 transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                <ArrowLeft size={16} />
+                Back to Articles
+              </Link>
             )}
             <div className="flex items-center gap-2 sm:gap-4">
+              <button
+                onClick={toggleHalos}
+                className="p-2 rounded-zenon transition-colors hover:bg-gray-100 dark:hover:bg-zenon-light-bg/10"
+                aria-label={showHalos ? "Hide background effects" : "Show background effects"}
+              >
+                {showHalos ? (
+                  <Eye className="w-5 h-5 text-zenon-light-text dark:text-zenon-dark-text" />
+                ) : (
+                  <EyeOff className="w-5 h-5 text-zenon-light-text dark:text-zenon-dark-text" />
+                )}
+              </button>
               <ThemeToggle />
               <ProfileMenu />
             </div>

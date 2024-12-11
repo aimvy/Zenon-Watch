@@ -3,8 +3,33 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --card-bg-light: 238, 239, 240;
+    --card-bg-dark: 34, 35, 36;
+    --header-bg-light: 232, 233, 234;
+    --header-bg-dark: 38, 39, 40;
+  }
+
   body {
     @apply bg-zenon-light-bg dark:bg-zenon-dark-bg text-zenon-light-text dark:text-zenon-dark-text;
+  }
+}
+
+@layer components {
+  .zenon-shadow {
+    @apply shadow-[0_4px_20px_-2px_rgba(0,0,0,0.25)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.35)];
+  }
+
+  .zenon-shadow-hover {
+    @apply hover:shadow-[0_12px_40px_-5px_rgba(0,0,0,0.35)] dark:hover:shadow-[0_12px_40px_-5px_rgba(0,0,0,0.45)];
+  }
+
+  .header-bg {
+    @apply bg-[rgb(var(--header-bg-light))] dark:bg-[rgb(var(--header-bg-dark))];
+  }
+
+  .card-bg {
+    @apply bg-[rgb(var(--card-bg-light))] dark:bg-[rgb(var(--card-bg-dark))];
   }
 }
 
@@ -147,4 +172,35 @@
 .modal-backdrop-exit-active {
   opacity: 0;
   transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Background styles */
+.blob {
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  will-change: transform;
+  transition: transform 0.3s ease-out;
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+}
+
+/* Mode clair - halos plus intenses */
+:root:not(.dark) .blob {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 0, 0, 0.3) 0%,
+    rgba(255, 0, 0, 0.2) 30%,
+    rgba(255, 0, 0, 0) 70%
+  );
+}
+
+/* Mode sombre - halos moins intenses */
+:root.dark .blob {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 0, 0, 0.15) 0%,
+    rgba(255, 0, 0, 0.1) 30%,
+    rgba(255, 0, 0, 0) 70%
+  );
 }

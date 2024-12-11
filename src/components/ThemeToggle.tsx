@@ -8,7 +8,7 @@ export const ThemeToggle: React.FC = () => {
   return (
     <button
       onClick={toggle}
-      className="p-2 rounded-zenon transition-colors hover:bg-zenon-dark-card dark:hover:bg-zenon-light-bg/10"
+      className="p-2 rounded-zenon transition-colors hover:bg-gray-100 dark:hover:bg-zenon-light-bg/10"
       aria-label="Toggle theme"
     >
       {isDark ? (

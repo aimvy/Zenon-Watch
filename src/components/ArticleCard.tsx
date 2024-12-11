@@ -77,14 +77,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <div
             ref={provided.innerRef}
             {...provided.draggableProps}
-            className="mb-4"
           >
             <div
               ref={cardRef}
+              className={`group relative card-bg rounded-zenon p-6 
+                zenon-shadow zenon-shadow-hover transition-all duration-300 ease-in-out cursor-pointer
+                ${isSelected || snapshot.isDragging ? 'ring-2 ring-red-500' : ''}`}
               onClick={!snapshot.isDragging ? handleCardClick : undefined}
-              className={`relative bg-zenon-light-card/90 dark:bg-zenon-dark-card/95 p-6 rounded-zenon transition-all shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_4px_6px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_-3px_rgba(0,0,0,0.2),0_4px_6px_-2px_rgba(0,0,0,0.15)] cursor-pointer hover:shadow-lg ${
-                snapshot.isDragging ? 'shadow-lg ring-2 ring-zenon-primary/50' : ''
-              }`}
             >
               <div className="flex items-start justify-between gap-4 w-full relative">
                 <div className="flex-grow">

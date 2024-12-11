@@ -96,7 +96,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="space-y-4"
+              className="space-y-8"
             >
               {localArticles.map((article, index) => (
                 <ArticleCard
