@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
 import { User2, LogOut, Settings, ChevronDown, Users } from 'lucide-react';
+import { Menu } from '@headlessui/react';
+import { useBackground } from '../contexts/BackgroundContext';
+import type { AnimationTheme } from '../contexts/BackgroundContext';
+import SettingsModal from './SettingsModal';
 
 interface OnlineUser {
   id: string;
@@ -8,11 +12,20 @@ interface OnlineUser {
   last_seen: string;
 }
 
-export const ProfileMenu: React.FC = () => {
+const ProfileMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsTriggerRect, setSettingsTriggerRect] = useState<DOMRect | null>(null);
   const supabase = useSupabaseClient();
   const user = useUser();
+  const { animationTheme, setAnimationTheme } = useBackground();
+
+  const animationThemes: { id: AnimationTheme; name: string }[] = [
+    { id: 'halos', name: 'Halos' },
+    { id: 'strokes', name: 'Strokes' },
+    { id: 'beams', name: 'Beams' },
+  ];
 
   useEffect(() => {
     const updatePresence = async () => {
@@ -144,31 +157,44 @@ export const ProfileMenu: React.FC = () => {
 
               <div className="h-px bg-zenon-light-border dark:bg-zenon-dark-border my-1" />
 
-              <button
-                onClick={() => {
-                  console.log('Settings clicked');
-                  setIsOpen(false);
-                }}
-                className="flex w-full items-center gap-3 px-3 py-2 text-sm text-zenon-light-text dark:text-zenon-dark-text hover:bg-zenon-light-bg dark:hover:bg-zenon-dark-bg rounded-lg transition-colors"
-              >
-                <Settings className="w-4 h-4 text-zenon-light-text/70 dark:text-zenon-dark-text/70" />
-                Settings
-              </button>
-              
-              <button
-                onClick={() => {
-                  handleSignOut();
-                  setIsOpen(false);
-                }}
-                className="flex w-full items-center gap-3 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors mt-1"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign out
-              </button>
+              <div className="px-1 py-1">
+                <button
+                  onClick={(e) => {
+                    const button = e.currentTarget;
+                    const rect = button.getBoundingClientRect();
+                    setSettingsTriggerRect(rect);
+                    setShowSettingsModal(true);
+                    setIsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 px-3 py-2 text-sm text-zenon-light-text dark:text-zenon-dark-text hover:bg-zenon-light-bg dark:hover:bg-zenon-dark-bg rounded-lg transition-colors"
+                >
+                  <Settings className="w-4 h-4 text-zenon-light-text/70 dark:text-zenon-dark-text/70" />
+                  Settings
+                </button>
+                
+                <button
+                  onClick={() => {
+                    handleSignOut();
+                    setIsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 px-3 py-2 text-sm text-zenon-light-text dark:text-zenon-dark-text hover:bg-zenon-light-bg dark:hover:bg-zenon-dark-bg rounded-lg transition-colors"
+                >
+                  <LogOut className="w-4 h-4 text-zenon-light-text/70 dark:text-zenon-dark-text/70" />
+                  Sign out
+                </button>
+              </div>
             </div>
           </div>
         </>
       )}
+      
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </div>
   );
 };
+
+export default ProfileMenu;

@@ -1,273 +1,309 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { useBackground } from '../contexts/BackgroundContext';
 
 interface Halo {
+  id: number;
   x: number;
   y: number;
   vx: number;
   vy: number;
   size: number;
   baseSize: number;
-  deform: number;
+  targetSize: number;
+  deformPhase: number;
+  deformSpeed: number;
+  deformAmount: number;
   color: string;
   opacity: number;
-  speed: number;
+  blur: number;
+  lifeTime: number;
+  maxLife: number;
+  birthTime: number;
   phase: number;
+  phaseSpeed: number;
+  amplitude: number;
+  frequency: number;
+  secondaryPhase: number;
+}
+
+const MIN_HALOS = 5;
+const MAX_HALOS = 8;
+const MIN_LIFE_TIME = 8000;
+const MAX_LIFE_TIME = 15000;
+const FADE_IN_DURATION = 1000;
+const FADE_OUT_DURATION = 2000;
+const SCROLL_SENSITIVITY = 0.4; 
+const BASE_WAVE_SPEED = 0.0008; 
+const SIZE_CHANGE_SPEED = 0.001; 
+const DEFORM_BASE_SPEED = 0.001; 
+const BASE_MOVEMENT_SPEED = 0.015; 
+const BOUNDARY_MARGIN = 300; // Marge autour de l'écran en pixels
+
+interface Boundary {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
 }
 
 const Background: React.FC = () => {
-  const { showHalos } = useBackground();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { showAnimation, animationTheme } = useBackground();
+  const isDarkMode = useRef(window.matchMedia('(prefers-color-scheme: dark)').matches);
   const animationFrameRef = useRef<number>();
-  const lastScrollY = useRef<number>(0);
   const halos = useRef<Halo[]>([]);
-  const time = useRef<number>(0);
+  const lastTime = useRef<number>(0);
+  const nextId = useRef<number>(0);
+  const boundary = useRef<Boundary>({
+    left: -BOUNDARY_MARGIN,
+    right: window.innerWidth + BOUNDARY_MARGIN,
+    top: -BOUNDARY_MARGIN,
+    bottom: window.innerHeight + BOUNDARY_MARGIN
+  });
 
-  // Initialisation des halos
-  const initHalos = useCallback(() => {
-    const newHalos: Halo[] = [];
-    
-    // Configuration des différents types de halos
-    const configs = [
-      { count: 2, size: 400, speed: 0.00004, opacity: 0.035 },  // Moyens, plus intenses
-      { count: 2, size: 300, speed: 0.00005, opacity: 0.025 },  // Petits, plus diffus
-    ];
+  const createHalo = useCallback((spawnAtEdge = false): Halo => {
+    const baseSize = 150 + Math.random() * 500;
+    const size = baseSize * (0.6 + Math.random() * 0.8);
+    const expansionFactor = Math.random() < 0.3 ? 2.5 : 1.5;
 
-    // Initialisation avec espacement
-    const initHaloPosition = (index: number, total: number) => {
-      // Divise l'écran en sections pour une meilleure distribution
-      const sectionWidth = window.innerWidth / (total + 1);
-      const sectionHeight = window.innerHeight / (total + 1);
+    let x: number, y: number;
+    let vx: number, vy: number;
+
+    const baseSpeed = BASE_MOVEMENT_SPEED * (0.8 + Math.random() * 0.4);
+
+    if (spawnAtEdge) {
+      const edge = Math.floor(Math.random() * 4);
+      const speed = baseSpeed * (1 + Math.random() * 0.5); 
       
-      return {
-        x: sectionWidth * (index + 1) + (Math.random() - 0.5) * sectionWidth * 0.8,
-        y: sectionHeight * (index + 1) + (Math.random() - 0.5) * sectionHeight * 0.8
-      };
+      switch (edge) {
+        case 0:
+          x = Math.random() * window.innerWidth;
+          y = -size;
+          vx = (Math.random() - 0.5) * speed * 2;
+          vy = speed;
+          break;
+        case 1:
+          x = window.innerWidth + size;
+          y = Math.random() * window.innerHeight;
+          vx = -speed;
+          vy = (Math.random() - 0.5) * speed * 2;
+          break;
+        case 2:
+          x = Math.random() * window.innerWidth;
+          y = window.innerHeight + size;
+          vx = (Math.random() - 0.5) * speed * 2;
+          vy = -speed;
+          break;
+        default:
+          x = -size;
+          y = Math.random() * window.innerHeight;
+          vx = speed;
+          vy = (Math.random() - 0.5) * speed * 2;
+      }
+    } else {
+      x = Math.random() * window.innerWidth;
+      y = Math.random() * window.innerHeight;
+      const angle = Math.random() * Math.PI * 2;
+      vx = Math.cos(angle) * baseSpeed;
+      vy = Math.sin(angle) * baseSpeed;
+    }
+
+    const hue = 0;
+    const saturation = isDarkMode.current 
+      ? (85 + Math.random() * 15)  // Mode sombre: 85-100%
+      : (90 + Math.random() * 10); // Mode clair: 90-100%
+    const lightness = isDarkMode.current
+      ? (20 + Math.random() * 30)  // Mode sombre: 20-50%
+      : (35 + Math.random() * 25); // Mode clair: 35-60%
+    const baseOpacity = Math.random() < 0.3 
+      ? (isDarkMode.current ? (0.8 + Math.random() * 0.2) : (0.85 + Math.random() * 0.15))  // Halos plus visibles
+      : (isDarkMode.current ? (0.3 + Math.random() * 0.3) : (0.4 + Math.random() * 0.3));   // Halos plus subtils
+
+    const now = performance.now();
+    return {
+      id: nextId.current++,
+      x,
+      y,
+      vx,
+      vy,
+      size,
+      baseSize: size,
+      targetSize: size * (0.4 + Math.random() * expansionFactor),
+      deformPhase: Math.random() * Math.PI * 2,
+      deformSpeed: DEFORM_BASE_SPEED * (0.7 + Math.random() * 0.6),
+      deformAmount: 0.2 + Math.random() * 0.3,
+      color: `hsla(${hue}, ${saturation}%, ${lightness}%, ${baseOpacity})`,
+      opacity: 0,
+      blur: isDarkMode.current ? (40 + Math.random() * 100) : (30 + Math.random() * 80),
+      lifeTime: 0,
+      maxLife: MIN_LIFE_TIME + Math.random() * (MAX_LIFE_TIME - MIN_LIFE_TIME),
+      birthTime: now,
+      phase: Math.random() * Math.PI * 2,
+      phaseSpeed: BASE_WAVE_SPEED * (0.8 + Math.random() * 0.4),
+      amplitude: 0.5 + Math.random() * 1.5,
+      frequency: 0.3 + Math.random() * 0.7,
+      secondaryPhase: Math.random() * Math.PI * 2
     };
-
-    let haloIndex = 0;
-    configs.forEach(config => {
-      for (let i = 0; i < config.count; i++) {
-        const position = initHaloPosition(haloIndex, configs.reduce((sum, c) => sum + c.count, 0));
-        haloIndex++;
-
-        const hue = 0; // Rouge
-        const saturation = 70 + Math.random() * 30;
-        const lightness = 45 + Math.random() * 10;
-
-        newHalos.push({
-          x: position.x,
-          y: position.y,
-          vx: 0,
-          vy: 0,
-          size: config.size,
-          baseSize: config.size,
-          deform: 0,
-          color: `hsla(${hue}, ${saturation}%, ${lightness}%, ${config.opacity})`,
-          opacity: config.opacity,
-          speed: config.speed,
-          phase: Math.random() * Math.PI * 2
-        });
-      }
-    });
-
-    halos.current = newHalos;
   }, []);
 
-  // Animation principale
-  const animate = useCallback((currentTime: number) => {
-    if (!canvasRef.current) return;
+  const initHalos = useCallback(() => {
+    const initialCount = Math.floor((MIN_HALOS + MAX_HALOS) / 2);
+    halos.current = Array(initialCount).fill(null).map(() => createHalo(false));
+  }, [createHalo]);
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Mise à jour du temps
-    time.current += 0.001;
-
-    // Effet de traînée plus prononcé
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Calcul du multiplicateur de vitesse basé sur le scroll
-    const currentScrollY = window.scrollY;
-    const scrollDelta = Math.abs(currentScrollY - lastScrollY.current);
-    const scrollMultiplier = Math.min(scrollDelta * 0.8, 20); // Réduction significative de la réactivité
-    lastScrollY.current = currentScrollY;
-
-    // Mise à jour et rendu des halos
-    halos.current.forEach(halo => {
-      const t = time.current + halo.phase;
-      
-      // Mouvements de base plus prononcés même au repos
-      const baseMovement = 0.2; // Mouvement minimal au repos
-      const moveX = (
-        Math.sin(t * 0.2) * Math.cos(t * 0.5) * 1.5 +
-        Math.sin(t * 0.1) * 1.0 +
-        Math.cos(t * 0.3) * Math.sin(t * 0.2) * 1.2 +
-        baseMovement * Math.sin(t * 0.05)  // Mouvement lent supplémentaire
-      ) * (1 + scrollMultiplier * 0.05);
-
-      const moveY = (
-        Math.cos(t * 0.3) * Math.sin(t * 0.4) * 1.5 +
-        Math.cos(t * 0.15) * 1.0 +
-        Math.sin(t * 0.25) * Math.cos(t * 0.3) * 1.2 +
-        baseMovement * Math.cos(t * 0.06)  // Mouvement lent supplémentaire
-      ) * (1 + scrollMultiplier * 0.05);
-      
-      // Vitesse de base plus élevée
-      const baseSpeed = halo.speed * 2;  // Doublé la vitesse de base
-      const effectiveSpeed = baseSpeed * (1 + scrollMultiplier * 20);
-      
-      // Application du mouvement avec plus d'inertie au repos
-      const restInertia = 0.005; // Inertie plus faible au repos pour des mouvements plus fluides
-      const scrollInertia = 0.02; // Inertie plus forte pendant le défilement
-      const currentInertia = restInertia + (scrollInertia - restInertia) * (scrollMultiplier / 20);
-      
-      halo.vx += (moveX * effectiveSpeed - halo.vx) * currentInertia;
-      halo.vy += (moveY * effectiveSpeed - halo.vy) * currentInertia;
-      
-      halo.x += halo.vx * window.innerWidth * 0.08;
-      halo.y += halo.vy * window.innerHeight * 0.08;
-
-      // Repositionnement intelligent avec espacement minimum
-      const margin = halo.size;
-      const minDistance = 400; // Distance minimale entre les halos
-
-      const repositionHalo = () => {
-        const visibleHalos = halos.current.filter(h => 
-          h.x > 0 && h.x < window.innerWidth && 
-          h.y > 0 && h.y < window.innerHeight
-        );
-
-        if (visibleHalos.length < 2) { // Garantir au moins 2 halos visibles
-          let newX, newY;
-          let attempts = 0;
-          const maxAttempts = 10;
-
-          do {
-            if (halo.x < 0) {
-              newX = window.innerWidth - margin;
-              newY = Math.random() * window.innerHeight;
-            } else if (halo.x > window.innerWidth) {
-              newX = margin;
-              newY = Math.random() * window.innerHeight;
-            } else if (halo.y < 0) {
-              newX = Math.random() * window.innerWidth;
-              newY = window.innerHeight - margin;
-            } else {
-              newX = Math.random() * window.innerWidth;
-              newY = margin;
-            }
-
-            // Vérifie la distance avec les autres halos
-            const tooClose = visibleHalos.some(h => {
-              const dx = newX - h.x;
-              const dy = newY - h.y;
-              return Math.sqrt(dx * dx + dy * dy) < minDistance;
-            });
-
-            if (!tooClose) {
-              halo.x = newX;
-              halo.y = newY;
-              break;
-            }
-
-            attempts++;
-          } while (attempts < maxAttempts);
-        }
-      };
-
-      if (halo.x < -margin || halo.x > window.innerWidth + margin ||
-          halo.y < -margin || halo.y > window.innerHeight + margin) {
-        repositionHalo();
-      }
-
-      // Déformation plus prononcée même au repos
-      const baseDeform = 0.1; // Déformation minimale au repos
-      const deformPhase = t * 0.2 + halo.phase;  // Ralenti la fréquence de déformation
-      const deformAmount = (
-        baseDeform + 
-        Math.sin(deformPhase) * 0.2 + 
-        Math.sin(deformPhase * 0.5) * 0.1
-      ) * (1 + scrollMultiplier * 0.1);
-      
-      halo.deform += (deformAmount - halo.deform) * 0.02;
-
-      // Variation de taille plus prononcée au repos
-      const baseSizeVariation = 0.05; // Variation minimale de taille au repos
-      const sizeVariation = 1 + (
-        baseSizeVariation * Math.sin(t * 0.1 + halo.phase) +
-        Math.sin(t * 0.2 + halo.phase) * 0.1
-      ) * (1 + scrollMultiplier * 0.02);
-      
-      // Rendu avec plus de flou
-      ctx.beginPath();
-      ctx.fillStyle = halo.color;
-      ctx.filter = 'blur(40px)';
-      
-      // Forme organique
-      const xRadius = halo.baseSize * sizeVariation * (1 + halo.deform);
-      const yRadius = halo.baseSize * sizeVariation * (1 - halo.deform);
-      
-      ctx.ellipse(
-        halo.x,
-        halo.y,
-        xRadius,
-        yRadius,
-        Math.sin(t + halo.phase) * Math.PI,
-        0,
-        Math.PI * 2
-      );
-      
-      ctx.fill();
-      ctx.filter = 'none';
-    });
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-  }, []);
-
-  // Gestion du redimensionnement
   const handleResize = useCallback(() => {
     if (!canvasRef.current) return;
-    
     const canvas = canvasRef.current;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    boundary.current = {
+      left: -BOUNDARY_MARGIN,
+      right: window.innerWidth + BOUNDARY_MARGIN,
+      top: -BOUNDARY_MARGIN,
+      bottom: window.innerHeight + BOUNDARY_MARGIN
+    };
   }, []);
 
-  // Setup initial et cleanup
-  useEffect(() => {
-    if (!canvasRef.current) return;
+  const updateHalo = useCallback((halo: Halo, deltaTime: number, scrollSpeed: number = 0) => {
+    const now = performance.now();
+    
+    const speedMultiplier = 1 + (scrollSpeed * 1.5);
+    halo.x += halo.vx * deltaTime * speedMultiplier;
+    halo.y += halo.vy * deltaTime * speedMultiplier;
 
-    handleResize();
-    initHalos();
+    const bounceSpeedRetention = 0.8;
+    
+    if (halo.x - halo.size/2 < boundary.current.left) {
+      halo.x = boundary.current.left + halo.size/2;
+      halo.vx = Math.abs(halo.vx) * bounceSpeedRetention;
+    } else if (halo.x + halo.size/2 > boundary.current.right) {
+      halo.x = boundary.current.right - halo.size/2;
+      halo.vx = -Math.abs(halo.vx) * bounceSpeedRetention;
+    }
+
+    if (halo.y - halo.size/2 < boundary.current.top) {
+      halo.y = boundary.current.top + halo.size/2;
+      halo.vy = Math.abs(halo.vy) * bounceSpeedRetention;
+    } else if (halo.y + halo.size/2 > boundary.current.bottom) {
+      halo.y = boundary.current.bottom - halo.size/2;
+      halo.vy = -Math.abs(halo.vy) * bounceSpeedRetention;
+    }
+
+    const chaosAmount = 0.00015 * (1 + scrollSpeed * 1.5);
+    halo.vx += (Math.random() - 0.5) * chaosAmount * deltaTime;
+    halo.vy += (Math.random() - 0.5) * chaosAmount * deltaTime;
+
+    const maxSpeed = 0.3 * (1 + scrollSpeed * 1.5);
+    const currentSpeed = Math.sqrt(halo.vx * halo.vx + halo.vy * halo.vy);
+    if (currentSpeed > maxSpeed) {
+      halo.vx = (halo.vx / currentSpeed) * maxSpeed;
+      halo.vy = (halo.vy / currentSpeed) * maxSpeed;
+    }
+
+    const deformSpeedMultiplier = 1 + (scrollSpeed * 0.5);
+    halo.deformPhase += halo.deformSpeed * deltaTime * deformSpeedMultiplier;
+    const deform = Math.sin(halo.deformPhase) * halo.deformAmount;
+
+    // Gestion plus dynamique de la taille
+    const sizeChangeMultiplier = 1 + (scrollSpeed * 0.3);
+    const sizeDiff = halo.targetSize - halo.size;
+    if (Math.abs(sizeDiff) > 1) {
+      halo.size += sizeDiff * SIZE_CHANGE_SPEED * deltaTime * sizeChangeMultiplier;
+    } else {
+      // Nouvelle taille cible plus variée
+      const expansionFactor = Math.random() < 0.3 ? 2.5 : 1.5;
+      halo.targetSize = halo.baseSize * (0.4 + Math.random() * expansionFactor);
+    }
+
+    const baseOpacity = parseFloat(halo.color.split(',')[3]);
+    halo.opacity = baseOpacity;
+
+    return halo;
+  }, []);
+
+  const renderHalo = useCallback((ctx: CanvasRenderingContext2D, halo: Halo) => {
+    const [hue, saturation, lightness] = halo.color.split('(')[1].split(')')[0].split(',').map(v => parseFloat(v));
+    
+    const deform = Math.sin(halo.deformPhase) * halo.deformAmount;
+    const currentSize = halo.size * (1 + deform);
+    
+    const gradient = ctx.createRadialGradient(halo.x, halo.y, 0, halo.x, halo.y, currentSize / 2);
+    gradient.addColorStop(0, `hsla(${hue}, ${saturation}%, ${lightness}%, ${halo.opacity})`);
+    gradient.addColorStop(0.4, `hsla(${hue}, ${saturation}%, ${lightness}%, ${halo.opacity * 0.6})`);
+    gradient.addColorStop(0.7, `hsla(${hue}, ${saturation}%, ${lightness}%, ${halo.opacity * 0.3})`);
+    gradient.addColorStop(1, `hsla(${hue}, ${saturation}%, ${lightness}%, 0)`);
+
+    ctx.filter = `blur(${halo.blur}px)`;
+    ctx.beginPath();
+    ctx.fillStyle = gradient;
+    
+    const scaleX = 1 + deform * 0.5;
+    const scaleY = 1 - deform * 0.5;
+    ctx.save();
+    ctx.translate(halo.x, halo.y);
+    ctx.scale(scaleX, scaleY);
+    ctx.arc(0, 0, currentSize / 2, 0, Math.PI * 2);
+    ctx.restore();
+    ctx.fill();
+}, []);
+
+  const animate = useCallback(() => {
+    if (!canvasRef.current || !showAnimation) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+      return;
+    }
+
+    const now = performance.now();
+    const deltaTime = now - lastTime.current;
+    lastTime.current = now;
+
+    const currentScrollY = window.scrollY;
+    const scrollDelta = Math.abs(currentScrollY - (window._lastScrollY || 0));
+    const scrollSpeed = Math.min(scrollDelta * 0.3, 35);
+    window._lastScrollY = currentScrollY;
+
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+
+    while (halos.current.length < MIN_HALOS) {
+      halos.current.push(createHalo(true));
+    }
+
+    halos.current.forEach(halo => {
+      updateHalo(halo, deltaTime, scrollSpeed);
+    });
+
+    ctx.filter = 'none';
+    halos.current.forEach(halo => renderHalo(ctx, halo));
+
     animationFrameRef.current = requestAnimationFrame(animate);
+  }, [createHalo, updateHalo, renderHalo, showAnimation]);
 
+  useEffect(() => {
+    handleResize();
     window.addEventListener('resize', handleResize);
+    
+    if (showAnimation && animationTheme === 'halos') {
+      initHalos();
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
 
     return () => {
+      window.removeEventListener('resize', handleResize);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      window.removeEventListener('resize', handleResize);
     };
-  }, [animate, handleResize, initHalos]);
+  }, [handleResize, initHalos, animate, showAnimation, animationTheme]);
 
   return (
     <canvas
       ref={canvasRef}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        zIndex: -1,
-        opacity: showHalos ? 1 : 0,
-        transition: 'opacity 0.3s ease-in-out'
-      }}
+      className="fixed inset-0 w-full h-full pointer-events-none"
+      style={{ zIndex: -1 }}
     />
   );
 };

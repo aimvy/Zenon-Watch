@@ -15,3 +15,5 @@
   transition: transform 0.3s ease-out;
   pointer-events: none;
 }
+
+/* Suppression des classes modal-open et modal-closed */

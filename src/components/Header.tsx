@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ThemeToggle } from './ThemeToggle';
-import { ProfileMenu } from './ProfileMenu';
+import ProfileMenu from './ProfileMenu';
 import { AddArticleModal } from './AddArticleModal';
 import { Link, useLocation } from 'react-router-dom';
 import { Trash2, ArrowLeft, Plus, Eye, EyeOff } from 'lucide-react';
@@ -20,7 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   const location = useLocation();
   const isTrashPage = location.pathname === '/trash';
   const [showAddModal, setShowAddModal] = useState(false);
-  const { showHalos, toggleHalos } = useBackground();
+  const { showAnimation, toggleAnimation } = useBackground();
 
   return (
     <div className="sticky top-0 z-50 -mx-4 sm:-mx-8 md:-mx-14 lg:-mx-20 mb-8">
@@ -66,15 +66,18 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             <div className="flex items-center gap-2 sm:gap-4">
               <button
-                onClick={toggleHalos}
-                className="p-2 rounded-zenon transition-colors hover:bg-gray-100 dark:hover:bg-zenon-light-bg/10"
-                aria-label={showHalos ? "Hide background effects" : "Show background effects"}
+                onClick={toggleAnimation}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full relative group"
+                title="Toggle animation"
               >
-                {showHalos ? (
+                {showAnimation ? (
                   <Eye className="w-5 h-5 text-zenon-light-text dark:text-zenon-dark-text" />
                 ) : (
                   <EyeOff className="w-5 h-5 text-zenon-light-text dark:text-zenon-dark-text" />
                 )}
+                <span className="absolute hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm px-2 py-1 rounded-md -bottom-10 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                  Change animation theme in settings
+                </span>
               </button>
               <ThemeToggle />
               <ProfileMenu />
