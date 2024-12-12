@@ -4,6 +4,8 @@ import { GripVertical, Tag, Calendar, FileText, Minimize2, ArrowUpDown, ThumbsUp
 import { Article } from '../types';
 import { ArticleModal } from './ArticleModal';
 import { sanitizeHTML } from '../utils/sanitize';
+import { useNotification } from '../contexts/NotificationContext';
+import { getComingSoonMessage } from '../utils/comingSoon';
 
 interface ArticleCardProps {
   article: Article;
@@ -34,6 +36,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [modalTriggerRect, setModalTriggerRect] = useState<DOMRect | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const { showNotification } = useNotification();
 
   const MAX_CHARS = 1200/*  */;
 
@@ -41,8 +44,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   const handleReduceText = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // TODO: Implement webhook call to Make automation
-    console.log('Reducing text for article:', article.id);
+    showNotification(getComingSoonMessage('AI text reduction'));
   };
 
   const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {

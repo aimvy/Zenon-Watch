@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useBackground } from '../contexts/BackgroundContext';
+import { useNotification } from '../contexts/NotificationContext';
 import type { AnimationTheme } from '../contexts/BackgroundContext';
+import { getComingSoonMessage } from '../utils/comingSoon';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -38,6 +40,7 @@ const animationThemes: { id: AnimationTheme; name: string; description: string }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const { animationTheme, setAnimationTheme, showAnimation, toggleAnimation } = useBackground();
+  const { showNotification } = useNotification();
   const [isClosing, setIsClosing] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -74,6 +77,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       window.removeEventListener('keydown', handleEscape);
     };
   }, []);
+
+  const handleThemeClick = (themeId: AnimationTheme) => {
+    if (['strokes', 'beams'].includes(themeId)) {
+      showNotification(getComingSoonMessage('animation theme'));
+    } else {
+      setAnimationTheme(themeId);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -138,12 +149,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 {animationThemes.map((theme) => (
                   <div
                     key={theme.id}
-                    className={`relative flex items-start p-4 sm:p-5 cursor-pointer rounded-zenon border transition-all ${
+                    className={`relative flex items-start space-x-3 rounded-lg border p-4 hover:cursor-pointer transition-all ${
                       animationTheme === theme.id
                         ? 'border-zenon-primary bg-zenon-primary/5 dark:bg-zenon-primary/10 shadow-lg shadow-zenon-primary/10'
                         : 'border-zenon-light-border dark:border-zenon-dark-border hover:bg-zenon-light-bg dark:hover:bg-zenon-dark-bg hover:shadow-md'
                     }`}
-                    onClick={() => setAnimationTheme(theme.id)}
+                    onClick={() => handleThemeClick(theme.id)}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">

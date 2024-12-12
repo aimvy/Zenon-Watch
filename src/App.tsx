@@ -14,6 +14,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TrashPage from './components/TrashPage';
 import Background from './components/Background';
 import { BackgroundProvider } from './contexts/BackgroundContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { useNotification } from './contexts/NotificationContext';
+import { getComingSoonMessage } from './utils/comingSoon';
 
 function MainApp() {
   const [sortOption, setSortOption] = useState<'priority' | 'date' | 'upvotes'>('priority');
@@ -37,6 +40,8 @@ function MainApp() {
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [editableArticles, setEditableArticles] = useState(initialArticles);
   const [inputValue, setInputValue] = useState(0);
+
+  const { showNotification } = useNotification();
 
   useMouseGradient();
 
@@ -73,7 +78,11 @@ function MainApp() {
     }
   };
 
-  const handleSortChange = async (option: 'priority' | 'date' | 'upvotes') => {
+  const handleSortChange = (option: 'priority' | 'date' | 'upvotes') => {
+    if (option === 'priority') {
+      showNotification(getComingSoonMessage('priority sorting'));
+      return;
+    }
     setSortOption(option);
   };
 
@@ -84,6 +93,14 @@ function MainApp() {
       const promises = selectedArticleIds.map(id => deleteArticle(id));
       await Promise.all(promises);
     }
+  };
+
+  const handleReduceText = () => {
+    showNotification(getComingSoonMessage('AI text reduction'));
+  };
+
+  const handleValidateProduction = () => {
+    showNotification(getComingSoonMessage('production validation'));
   };
 
   if (loading) {
@@ -137,6 +154,7 @@ function MainApp() {
           />
           <div className="mt-6 flex justify-end">
             <button
+              onClick={handleValidateProduction}
               className="px-6 py-2.5 bg-zenon-primary text-white rounded-zenon hover:bg-zenon-primary-dark transition-colors"
             >
               Validate Production
@@ -241,7 +259,9 @@ function App() {
         <SessionContextProvider supabaseClient={supabase}>
           <AuthProvider>
             <BackgroundProvider>
-              <MainApp />
+              <NotificationProvider>
+                <MainApp />
+              </NotificationProvider>
             </BackgroundProvider>
           </AuthProvider>
         </SessionContextProvider>

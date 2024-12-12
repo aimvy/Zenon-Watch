@@ -54,12 +54,17 @@ export default {
             transform: 'translate(calc(var(--trigger-left) - 50vw - 50%), calc(var(--trigger-top) - 50vh - 50%)) scale(0.5)',
           },
         },
+        'slide-down': {
+          '0%': { transform: 'translate(-50%, -100%)', opacity: '0' },
+          '100%': { transform: 'translate(-50%, 0)', opacity: '1' },
+        }
       },
       animation: {
         overlayShow: 'overlayShow 250ms ease-out',
         overlayHide: 'overlayHide 200ms ease-in',
         modalShow: 'modalShow 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         modalHide: 'modalHide 200ms ease-in',
+        'slide-down': 'slide-down 0.3s ease-out forwards',
       },
       transitionTimingFunction: {
         'modal': 'cubic-bezier(0.4, 0, 0.2, 1)',
