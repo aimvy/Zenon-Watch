@@ -20,6 +20,16 @@ const animationThemes: { id: AnimationTheme; name: string; description: string }
     description: 'Ethereal smoke effects creating a mystical atmosphere'
   },
   { 
+    id: 'strokes', 
+    name: 'Strokes', 
+    description: 'Minimalist lines that move across the screen in a geometric pattern'
+  },
+  { 
+    id: 'beams', 
+    name: 'Beams', 
+    description: 'Radiant light beams that pulse and move through space'
+  },
+  { 
     id: 'topology', 
     name: 'Topology', 
     description: 'Dynamic network of interconnected points and lines'
@@ -133,7 +143,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         ? 'border-zenon-primary bg-zenon-primary/5 dark:bg-zenon-primary/10 shadow-lg shadow-zenon-primary/10'
                         : 'border-zenon-light-border dark:border-zenon-dark-border hover:bg-zenon-light-bg dark:hover:bg-zenon-dark-bg hover:shadow-md'
                     }`}
-                    onClick={() => setAnimationTheme(theme.id as AnimationTheme)}
+                    onClick={() => setAnimationTheme(theme.id)}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
