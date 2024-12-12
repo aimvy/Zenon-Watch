@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.blob {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 0, 0, 0.15) 0%,
+    rgba(255, 0, 0, 0.1) 30%,
+    rgba(255, 0, 0, 0) 70%
+  );
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  will-change: transform;
+  transition: transform 0.3s ease-out;
+  pointer-events: none;
+}
+
+/* Suppression des classes modal-open et modal-closed */

@@ -1,0 +1,206 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --card-bg-light: 238, 239, 240;
+    --card-bg-dark: 34, 35, 36;
+    --header-bg-light: 232, 233, 234;
+    --header-bg-dark: 38, 39, 40;
+  }
+
+  body {
+    @apply bg-zenon-light-bg dark:bg-zenon-dark-bg text-zenon-light-text dark:text-zenon-dark-text;
+  }
+}
+
+@layer components {
+  .zenon-shadow {
+    @apply shadow-[0_4px_20px_-2px_rgba(0,0,0,0.25)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.35)];
+  }
+
+  .zenon-shadow-hover {
+    @apply hover:shadow-[0_12px_40px_-5px_rgba(0,0,0,0.35)] dark:hover:shadow-[0_12px_40px_-5px_rgba(0,0,0,0.45)];
+  }
+
+  .header-bg {
+    @apply bg-[rgb(var(--header-bg-light))] dark:bg-[rgb(var(--header-bg-dark))];
+  }
+
+  .card-bg {
+    @apply bg-[rgb(var(--card-bg-light))] dark:bg-[rgb(var(--card-bg-dark))];
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar for all elements */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Ensure smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+.red-element {
+  background-color: rgba(178, 34, 34, 0.9);
+  color: white;
+  transition: background-color 0.2s ease;
+}
+
+.red-element:hover {
+  background-color: rgba(139, 0, 0, 0.95);
+}
+
+.dark .red-element {
+  background-color: rgba(255, 99, 99, 0.95);
+}
+
+.dark .red-element:hover {
+  background-color: rgba(255, 71, 71, 0.98);
+}
+
+.logo-shadow {
+  filter: drop-shadow(2px 3px 3px rgba(0, 0, 0, 0.7));
+}
+
+/* Custom checkbox styling */
+.checkbox-red {
+  appearance: none;
+  background-color: transparent;
+  border: 2px solid rgba(178, 34, 34, 0.2);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.checkbox-red:checked {
+  background-color: rgba(178, 34, 34, 0.9);
+  border-color: rgba(178, 34, 34, 0.9);
+}
+
+.dark .checkbox-red {
+  border-color: rgba(255, 150, 150, 0.2);
+}
+
+.dark .checkbox-red:checked {
+  background-color: rgba(255, 150, 150, 0.9);
+  border-color: rgba(255, 150, 150, 0.9);
+}
+
+.checkbox-red:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: white;
+}
+
+.dark .checkbox-red:checked::after {
+  background-color: black;
+}
+
+.modal-open {
+  left: calc(var(--trigger-left) - 32px);
+  top: 10vh;
+  width: var(--expanded-width);
+  height: 80vh;
+  transform-origin: center;
+  transform: scale(1);
+  opacity: 1;
+}
+
+.modal-closed {
+  left: var(--trigger-left);
+  top: var(--trigger-top);
+  width: var(--trigger-width);
+  height: var(--trigger-height);
+  transform-origin: center;
+  transform: scale(1);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Backdrop animation */
+.modal-backdrop-enter {
+  opacity: 0;
+}
+
+.modal-backdrop-enter-active {
+  opacity: 1;
+  transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-backdrop-exit {
+  opacity: 1;
+}
+
+.modal-backdrop-exit-active {
+  opacity: 0;
+  transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Background styles */
+.blob {
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  will-change: transform;
+  transition: transform 0.3s ease-out;
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+}
+
+/* Mode clair - halos plus intenses */
+:root:not(.dark) .blob {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 0, 0, 0.3) 0%,
+    rgba(255, 0, 0, 0.2) 30%,
+    rgba(255, 0, 0, 0) 70%
+  );
+}
+
+/* Mode sombre - halos moins intenses */
+:root.dark .blob {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 0, 0, 0.15) 0%,
+    rgba(255, 0, 0, 0.1) 30%,
+    rgba(255, 0, 0, 0) 70%
+  );
+}
