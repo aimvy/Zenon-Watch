@@ -17,6 +17,7 @@ import { BackgroundProvider } from './contexts/BackgroundContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { useNotification } from './contexts/NotificationContext';
 import { getComingSoonMessage } from './utils/comingSoon';
+import LoadingScreen from './components/LoadingScreen';
 
 function MainApp() {
   const [sortOption, setSortOption] = useState<'priority' | 'date' | 'upvotes'>('priority');
@@ -155,7 +156,7 @@ function MainApp() {
           <div className="mt-6 flex justify-end">
             <button
               onClick={handleValidateProduction}
-              className="px-6 py-2.5 bg-zenon-primary text-white rounded-zenon hover:bg-zenon-primary-dark transition-colors"
+              className="controls-appear px-6 py-2.5 bg-zenon-primary text-white rounded-zenon hover:bg-zenon-primary-dark transition-colors"
             >
               Validate Production
             </button>
@@ -178,7 +179,7 @@ function MainApp() {
           onAddArticle={createArticle}
         />
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 controls-appear">
             <div className="flex items-center gap-3">
               <span className="text-sm">Select first</span>
               <input
@@ -194,6 +195,8 @@ function MainApp() {
               />
               <span className="text-sm">articles</span>
             </div>
+          </div>
+          <div className="flex items-center gap-4 controls-appear">
             <button
               onClick={handlePublish}
               disabled={selectedArticleIds.length === 0}
@@ -253,6 +256,8 @@ function MainApp() {
 }
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
   return (
     <Router>
       <ErrorBoundary>
@@ -260,6 +265,7 @@ function App() {
           <AuthProvider>
             <BackgroundProvider>
               <NotificationProvider>
+                {isLoading && <LoadingScreen onLoadingComplete={() => setIsLoading(false)} />}
                 <MainApp />
               </NotificationProvider>
             </BackgroundProvider>

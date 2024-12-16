@@ -7,6 +7,7 @@ import { Trash2, ArrowLeft, Plus, Eye, EyeOff } from 'lucide-react';
 import { Article } from '../types';
 import ZENON from '../assets/ZENON.webp';
 import { useBackground } from '../contexts/BackgroundContext';
+import '../styles/appear.css';
 
 interface HeaderProps {
   isEditMode?: boolean;
@@ -23,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { showAnimation, toggleAnimation } = useBackground();
 
   return (
-    <div className="sticky top-0 z-50 -mx-4 sm:-mx-8 md:-mx-14 lg:-mx-20 mb-8">
+    <div className="header-appear sticky top-0 z-50 -mx-4 sm:-mx-8 md:-mx-14 lg:-mx-20 mb-8">
       <div className="header-bg zenon-shadow rounded-zenon px-4 sm:px-8 md:px-12 lg:px-16 py-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
           <div className="flex items-center gap-4 sm:gap-6">
@@ -37,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
             </h1>
           </div>
 
-          <div className="flex items-center flex-wrap justify-center sm:justify-end gap-2 sm:gap-4">
+          <div className="flex items-center flex-wrap justify-center sm:justify-end gap-2 sm:gap-4 controls-appear">
             {!isTrashPage && !isEditMode && (
               <button
                 onClick={() => setShowAddModal(true)}

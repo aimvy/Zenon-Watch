@@ -1,0 +1,69 @@
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.header-appear {
+  opacity: 0;
+  animation: fadeSlideIn 0.6s ease-out forwards;
+  animation-delay: 2s; /* Commence après l'animation de chargement */
+}
+
+.article-card-appear {
+  opacity: 0;
+  animation: cardAppear 0.5s ease-out forwards;
+}
+
+.controls-appear {
+  opacity: 0;
+  animation: fadeIn 0.6s ease-out forwards;
+  animation-delay: 2.4s; /* Après le header, avant les cartes */
+}
+
+/* Délais pour les cartes (jusqu'à 20 cartes) */
+.article-card-appear:nth-child(1) { animation-delay: 2.6s; }
+.article-card-appear:nth-child(2) { animation-delay: 2.7s; }
+.article-card-appear:nth-child(3) { animation-delay: 2.8s; }
+.article-card-appear:nth-child(4) { animation-delay: 2.9s; }
+.article-card-appear:nth-child(5) { animation-delay: 3.0s; }
+.article-card-appear:nth-child(6) { animation-delay: 3.1s; }
+.article-card-appear:nth-child(7) { animation-delay: 3.2s; }
+.article-card-appear:nth-child(8) { animation-delay: 3.3s; }
+.article-card-appear:nth-child(9) { animation-delay: 3.4s; }
+.article-card-appear:nth-child(10) { animation-delay: 3.5s; }
+.article-card-appear:nth-child(11) { animation-delay: 3.6s; }
+.article-card-appear:nth-child(12) { animation-delay: 3.7s; }
+.article-card-appear:nth-child(13) { animation-delay: 3.8s; }
+.article-card-appear:nth-child(14) { animation-delay: 3.9s; }
+.article-card-appear:nth-child(15) { animation-delay: 4.0s; }
+.article-card-appear:nth-child(16) { animation-delay: 4.1s; }
+.article-card-appear:nth-child(17) { animation-delay: 4.2s; }
+.article-card-appear:nth-child(18) { animation-delay: 4.3s; }
+.article-card-appear:nth-child(19) { animation-delay: 4.4s; }
+.article-card-appear:nth-child(20) { animation-delay: 4.5s; }

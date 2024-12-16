@@ -79,16 +79,16 @@ export const ArticleList: React.FC<ArticleListProps> = ({
 
   return (
     <div className="space-y-6">
-      <ArticleFilters
-        selectedTags={selectedTags}
-        currentSort={currentSort}
-        onTagSelect={setSelectedTags}
-        onSortChange={(sort) => {
-          // Incrémenter le compteur même si le mode de tri ne change pas
-          setSortCounter(prev => prev + 1);
-          onSortChange(sort);
-        }}
-      />
+      <div className="controls-appear flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <ArticleFilters 
+          articles={articles}
+          selectedTags={selectedTags}
+          onTagSelect={setSelectedTags}
+          currentSort={currentSort}
+          onSortChange={onSortChange}
+        />
+        
+      </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="articles">

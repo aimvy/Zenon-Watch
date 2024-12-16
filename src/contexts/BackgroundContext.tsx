@@ -10,45 +10,52 @@ interface BackgroundContextType {
 
 const BackgroundContext = createContext<BackgroundContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'zenon-watch-background';
+const STORAGE_KEY = 'zenon-background-preference';
 
 export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Récupérer les préférences sauvegardées ou utiliser les valeurs par défaut
-  const [showAnimation, setShowAnimation] = useState(() => {
+  const [preferences, setPreferences] = useState(() => {
+    const hasVisited = localStorage.getItem('hasVisited');
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return parsed.showAnimation ?? true;
+    
+    if (!hasVisited) {
+      // Première visite : valeurs par défaut
+      return {
+        showAnimation: true,
+        animationTheme: 'halos' as AnimationTheme
+      };
     }
-    return true;
+    
+    // Visites suivantes : charger les préférences sauvegardées ou utiliser les valeurs par défaut
+    return saved ? JSON.parse(saved) : {
+      showAnimation: true,
+      animationTheme: 'halos'
+    };
   });
 
-  const [animationTheme, setAnimationTheme] = useState<AnimationTheme>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return parsed.animationTheme ?? 'halos';
-    }
-    return 'halos';
-  });
-
-  // Sauvegarder les préférences quand elles changent
+  // Sauvegarder les préférences à chaque changement
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      showAnimation,
-      animationTheme
-    }));
-  }, [showAnimation, animationTheme]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+  }, [preferences]);
 
   const toggleAnimation = () => {
-    setShowAnimation(!showAnimation);
+    setPreferences(prev => ({
+      ...prev,
+      showAnimation: !prev.showAnimation
+    }));
+  };
+
+  const setAnimationTheme = (theme: AnimationTheme) => {
+    setPreferences(prev => ({
+      ...prev,
+      animationTheme: theme
+    }));
   };
 
   return (
     <BackgroundContext.Provider value={{ 
-      showAnimation, 
+      showAnimation: preferences.showAnimation, 
       toggleAnimation, 
-      animationTheme, 
+      animationTheme: preferences.animationTheme, 
       setAnimationTheme 
     }}>
       {children}
@@ -58,7 +65,7 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
 export const useBackground = () => {
   const context = useContext(BackgroundContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useBackground must be used within a BackgroundProvider');
   }
   return context;

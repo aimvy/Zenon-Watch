@@ -6,6 +6,7 @@ import { ArticleModal } from './ArticleModal';
 import { sanitizeHTML } from '../utils/sanitize';
 import { useNotification } from '../contexts/NotificationContext';
 import { getComingSoonMessage } from '../utils/comingSoon';
+import '../styles/appear.css';
 
 interface ArticleCardProps {
   article: Article;
@@ -82,7 +83,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           >
             <div
               ref={cardRef}
-              className={`group relative card-bg rounded-zenon p-6 
+              className={`article-card-appear relative bg-white dark:bg-zenon-dark-card rounded-zenon p-6 shadow-card dark:shadow-card-dark
                 zenon-shadow zenon-shadow-hover transition-all duration-300 ease-in-out cursor-pointer
                 ${isSelected || snapshot.isDragging ? 'ring-2 ring-red-500' : ''}`}
               onClick={!snapshot.isDragging ? handleCardClick : undefined}

@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react';
 
+const THEME_KEY = 'zenon-theme-preference';
+
 export const useTheme = () => {
   const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const hasVisited = localStorage.getItem('hasVisited');
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    
+    if (!hasVisited) {
+      localStorage.setItem('hasVisited', 'true');
+      return true; // Mode sombre par défaut pour la première visite
+    }
+    
+    return savedTheme ? savedTheme === 'dark' : false;
   });
 
   useEffect(() => {
@@ -13,7 +22,7 @@ export const useTheme = () => {
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
   }, [isDark]);
 
   const toggle = () => setIsDark(!isDark);

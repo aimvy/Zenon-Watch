@@ -57,6 +57,19 @@ export default {
         'slide-down': {
           '0%': { transform: 'translate(-50%, -100%)', opacity: '0' },
           '100%': { transform: 'translate(-50%, 0)', opacity: '1' },
+        },
+        'spin-slow': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        'spin-slow-reverse': {
+          '0%': { transform: 'rotate(360deg)' },
+          '100%': { transform: 'rotate(0deg)' },
+        },
+        'pulse': {
+          '0%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.1)' },
+          '100%': { transform: 'scale(1)' },
         }
       },
       animation: {
@@ -65,6 +78,9 @@ export default {
         modalShow: 'modalShow 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         modalHide: 'modalHide 200ms ease-in',
         'slide-down': 'slide-down 0.3s ease-out forwards',
+        'spin-slow': 'spin-slow 3s linear infinite',
+        'spin-slow-reverse': 'spin-slow-reverse 3s linear infinite',
+        'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
       },
       transitionTimingFunction: {
         'modal': 'cubic-bezier(0.4, 0, 0.2, 1)',

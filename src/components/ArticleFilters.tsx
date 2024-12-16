@@ -121,7 +121,7 @@ export const ArticleFilters: React.FC<ArticleFiltersProps> = ({
   return (
     <div className="flex flex-col gap-4 mb-6 w-full">
       {/* Sort buttons */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="controls-appear flex flex-wrap items-center gap-2">
         <button
           onClick={handlePriorityClick}
           className={`flex items-center gap-2 px-4 py-2 rounded-zenon transition-colors ${
@@ -158,7 +158,7 @@ export const ArticleFilters: React.FC<ArticleFiltersProps> = ({
       </div>
 
       {/* Tag list */}
-      <div className="flex flex-wrap gap-2 mt-2">
+      <div className="controls-appear flex flex-wrap gap-2 mt-2">
         {tags.map((tag) => (
           <button
             key={tag}
